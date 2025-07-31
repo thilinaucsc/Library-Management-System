@@ -1,0 +1,802 @@
+{
+	"info": {
+		"_postman_id": "library-management-system-api",
+		"name": "Library Management System API",
+		"description": "Complete REST API collection for the Library Management System\n\n## Overview\nThis collection contains all endpoints for managing books and borrowers in the library system.\n\n## Base URL\n- **Development**: http://localhost:8080\n- **Production**: Update the `{{baseUrl}}` environment variable\n\n## Authentication\nThis API does not require authentication (internal system).\n\n## Endpoints\n- POST /borrowers - Register new borrower\n- POST /books - Register new book\n- GET /books - Get all books\n- POST /books/{bookId}/borrow - Borrow a book\n- POST /books/{bookId}/return - Return a book\n\n## Error Codes\n- 200 OK - Successful operation\n- 201 Created - Resource created successfully\n- 400 Bad Request - Invalid input data\n- 404 Not Found - Resource not found\n- 409 Conflict - Business rule violation\n\n## Test Data\nThe system includes sample data:\n- 5 sample borrowers\n- 13 sample books (with multiple copies of popular titles)\n\nGenerated for Library Management System v1.0.0",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Borrower Management",
+			"item": [
+				{
+					"name": "Register New Borrower",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response has borrower data\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData).to.have.property('name');",
+									"    pm.expect(jsonData).to.have.property('email');",
+									"    pm.expect(jsonData).to.have.property('createdAt');",
+									"});",
+									"",
+									"pm.test(\"Store borrower ID for other tests\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set(\"borrowerId\", jsonData.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test User\",\n    \"email\": \"test.user@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/borrowers",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"borrowers"
+							]
+						},
+						"description": "Register a new borrower in the system.\n\n**Request Body:**\n- `name` (string, required): Full name of the borrower\n- `email` (string, required): Unique email address\n\n**Validation Rules:**\n- Name: 1-100 characters\n- Email: Valid email format, must be unique\n\n**Success Response (201):**\n```json\n{\n    \"id\": 1,\n    \"name\": \"Test User\",\n    \"email\": \"test.user@example.com\",\n    \"createdAt\": \"2025-07-31T10:00:00Z\"\n}\n```"
+					}
+				},
+				{
+					"name": "Register Borrower - Duplicate Email Error",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 409 Conflict\", function () {",
+									"    pm.response.to.have.status(409);",
+									"});",
+									"",
+									"pm.test(\"Error response format\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error');",
+									"    pm.expect(jsonData).to.have.property('message');",
+									"    pm.expect(jsonData).to.have.property('timestamp');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/borrowers",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"borrowers"
+							]
+						},
+						"description": "Test duplicate email validation - should return 409 Conflict.\n\nThis email already exists in the sample data."
+					}
+				},
+				{
+					"name": "Register Borrower - Invalid Email Error",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 Bad Request\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Validation error response\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error');",
+									"    pm.expect(jsonData.message).to.include('email');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Invalid User\",\n    \"email\": \"invalid-email\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/borrowers",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"borrowers"
+							]
+						},
+						"description": "Test email validation - should return 400 Bad Request for invalid email format."
+					}
+				}
+			],
+			"description": "Endpoints for managing borrowers in the library system."
+		},
+		{
+			"name": "Book Management",
+			"item": [
+				{
+					"name": "Register New Book",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response has book data\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData).to.have.property('isbn');",
+									"    pm.expect(jsonData).to.have.property('title');",
+									"    pm.expect(jsonData).to.have.property('author');",
+									"    pm.expect(jsonData).to.have.property('available');",
+									"    pm.expect(jsonData.available).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Store book ID for other tests\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set(\"bookId\", jsonData.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"isbn\": \"978-1-234-56789-0\",\n    \"title\": \"Test Driven Development\",\n    \"author\": \"Kent Beck\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"books"
+							]
+						},
+						"description": "Register a new book in the system.\n\n**Request Body:**\n- `isbn` (string, required): International Standard Book Number\n- `title` (string, required): Book title\n- `author` (string, required): Book author\n\n**Validation Rules:**\n- ISBN: 10-20 characters\n- Title: 1-500 characters\n- Author: 1-200 characters\n- Books with same ISBN must have identical title and author\n\n**Success Response (201):**\n```json\n{\n    \"id\": 1,\n    \"isbn\": \"978-1-234-56789-0\",\n    \"title\": \"Test Driven Development\",\n    \"author\": \"Kent Beck\",\n    \"available\": true,\n    \"borrower\": null,\n    \"borrowedAt\": null,\n    \"createdAt\": \"2025-07-31T10:00:00Z\"\n}\n```"
+					}
+				},
+				{
+					"name": "Register Book - ISBN Consistency Error",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 409 Conflict\", function () {",
+									"    pm.response.to.have.status(409);",
+									"});",
+									"",
+									"pm.test(\"ISBN consistency error\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error');",
+									"    pm.expect(jsonData.message).to.include('ISBN');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"isbn\": \"978-0-321-35668-0\",\n    \"title\": \"Different Title\",\n    \"author\": \"Different Author\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"books"
+							]
+						},
+						"description": "Test ISBN consistency validation - should return 409 Conflict.\n\nThis ISBN exists with different title/author in sample data."
+					}
+				},
+				{
+					"name": "Get All Books",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is an array\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"    pm.expect(jsonData.length).to.be.greaterThan(0);",
+									"});",
+									"",
+									"pm.test(\"Books have required properties\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    const book = jsonData[0];",
+									"    pm.expect(book).to.have.property('id');",
+									"    pm.expect(book).to.have.property('isbn');",
+									"    pm.expect(book).to.have.property('title');",
+									"    pm.expect(book).to.have.property('author');",
+									"    pm.expect(book).to.have.property('available');",
+									"});",
+									"",
+									"pm.test(\"Store available book ID for borrowing test\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    const availableBook = jsonData.find(book => book.available === true);",
+									"    if (availableBook) {",
+									"        pm.environment.set(\"availableBookId\", availableBook.id);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"books"
+							]
+						},
+						"description": "Retrieve all books in the library system.\n\n**Query Parameters:** None\n\n**Success Response (200):**\n```json\n[\n    {\n        \"id\": 1,\n        \"isbn\": \"978-0-321-35668-0\",\n        \"title\": \"Effective Java\",\n        \"author\": \"Joshua Bloch\",\n        \"available\": true,\n        \"borrower\": null,\n        \"borrowedAt\": null,\n        \"createdAt\": \"2025-07-31T10:00:00Z\"\n    },\n    {\n        \"id\": 2,\n        \"isbn\": \"978-0-13-468599-1\",\n        \"title\": \"The Clean Coder\",\n        \"author\": \"Robert C. Martin\",\n        \"available\": false,\n        \"borrower\": {\n            \"id\": 1,\n            \"name\": \"John Doe\",\n            \"email\": \"john.doe@example.com\"\n        },\n        \"borrowedAt\": \"2025-07-31T09:00:00Z\",\n        \"createdAt\": \"2025-07-31T10:00:00Z\"\n    }\n]\n```"
+					}
+				}
+			],
+			"description": "Endpoints for managing books in the library system."
+		},
+		{
+			"name": "Borrowing Operations",
+			"item": [
+				{
+					"name": "Borrow a Book",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Book is now borrowed\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('available');",
+									"    pm.expect(jsonData.available).to.be.false;",
+									"    pm.expect(jsonData).to.have.property('borrower');",
+									"    pm.expect(jsonData.borrower).to.not.be.null;",
+									"    pm.expect(jsonData).to.have.property('borrowedAt');",
+									"});",
+									"",
+									"pm.test(\"Store borrowed book ID for return test\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set(\"borrowedBookId\", jsonData.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"borrowerId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/books/{{availableBookId}}/borrow",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"books",
+								"{{availableBookId}}",
+								"borrow"
+							]
+						},
+						"description": "Borrow an available book.\n\n**Path Parameters:**\n- `bookId` (integer): ID of the book to borrow\n\n**Request Body:**\n- `borrowerId` (integer, required): ID of the borrower\n\n**Business Rules:**\n- Book must exist and be available (not currently borrowed)\n- Borrower must exist in the system\n\n**Success Response (200):**\n```json\n{\n    \"id\": 1,\n    \"isbn\": \"978-0-321-35668-0\",\n    \"title\": \"Effective Java\",\n    \"author\": \"Joshua Bloch\",\n    \"available\": false,\n    \"borrower\": {\n        \"id\": 1,\n        \"name\": \"John Doe\",\n        \"email\": \"john.doe@example.com\"\n    },\n    \"borrowedAt\": \"2025-07-31T10:30:00Z\",\n    \"createdAt\": \"2025-07-31T10:00:00Z\"\n}\n```"
+					}
+				},
+				{
+					"name": "Borrow Book - Already Borrowed Error",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 409 Conflict\", function () {",
+									"    pm.response.to.have.status(409);",
+									"});",
+									"",
+									"pm.test(\"Already borrowed error\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error');",
+									"    pm.expect(jsonData.message).to.include('already borrowed');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"borrowerId\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/books/{{borrowedBookId}}/borrow",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"books",
+								"{{borrowedBookId}}",
+								"borrow"
+							]
+						},
+						"description": "Test borrowing an already borrowed book - should return 409 Conflict."
+					}
+				},
+				{
+					"name": "Borrow Book - Book Not Found Error",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404 Not Found\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Book not found error\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error');",
+									"    pm.expect(jsonData.message).to.include('not found');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"borrowerId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/books/99999/borrow",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"books",
+								"99999",
+								"borrow"
+							]
+						},
+						"description": "Test borrowing non-existent book - should return 404 Not Found."
+					}
+				},
+				{
+					"name": "Borrow Book - Borrower Not Found Error",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404 Not Found\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Borrower not found error\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error');",
+									"    pm.expect(jsonData.message).to.include('Borrower');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"borrowerId\": 99999\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/books/{{availableBookId}}/borrow",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"books",
+								"{{availableBookId}}",
+								"borrow"
+							]
+						},
+						"description": "Test borrowing with non-existent borrower - should return 404 Not Found."
+					}
+				}
+			],
+			"description": "Endpoints for borrowing books in the library system."
+		},
+		{
+			"name": "Return Operations",
+			"item": [
+				{
+					"name": "Return a Book",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Book is now available\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('available');",
+									"    pm.expect(jsonData.available).to.be.true;",
+									"    pm.expect(jsonData.borrower).to.be.null;",
+									"    pm.expect(jsonData.borrowedAt).to.be.null;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/books/{{borrowedBookId}}/return",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"books",
+								"{{borrowedBookId}}",
+								"return"
+							]
+						},
+						"description": "Return a borrowed book.\n\n**Path Parameters:**\n- `bookId` (integer): ID of the book to return\n\n**Request Body:** None\n\n**Business Rules:**\n- Book must exist and be currently borrowed\n- System automatically determines the current borrower\n\n**Success Response (200):**\n```json\n{\n    \"id\": 1,\n    \"isbn\": \"978-0-321-35668-0\",\n    \"title\": \"Effective Java\",\n    \"author\": \"Joshua Bloch\",\n    \"available\": true,\n    \"borrower\": null,\n    \"borrowedAt\": null,\n    \"createdAt\": \"2025-07-31T10:00:00Z\"\n}\n```"
+					}
+				},
+				{
+					"name": "Return Book - Not Borrowed Error",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 409 Conflict\", function () {",
+									"    pm.response.to.have.status(409);",
+									"});",
+									"",
+									"pm.test(\"Not borrowed error\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error');",
+									"    pm.expect(jsonData.message).to.include('not currently borrowed');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/books/{{borrowedBookId}}/return",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"books",
+								"{{borrowedBookId}}",
+								"return"
+							]
+						},
+						"description": "Test returning a book that's not currently borrowed - should return 409 Conflict.\n\nThis should be run after the successful return test above."
+					}
+				},
+				{
+					"name": "Return Book - Book Not Found Error",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404 Not Found\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Book not found error\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error');",
+									"    pm.expect(jsonData.message).to.include('not found');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/books/99999/return",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"books",
+								"99999",
+								"return"
+							]
+						},
+						"description": "Test returning non-existent book - should return 404 Not Found."
+					}
+				}
+			],
+			"description": "Endpoints for returning books in the library system."
+		},
+		{
+			"name": "System Health & Info",
+			"item": [
+				{
+					"name": "Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"System is healthy\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"    pm.expect(jsonData.status).to.equal('UP');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/actuator/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"actuator",
+								"health"
+							]
+						},
+						"description": "Check the health status of the application.\n\n**Success Response (200):**\n```json\n{\n    \"status\": \"UP\",\n    \"components\": {\n        \"db\": {\n            \"status\": \"UP\",\n            \"details\": {\n                \"database\": \"H2\",\n                \"validationQuery\": \"SELECT 1\"\n            }\n        },\n        \"diskSpace\": {\n            \"status\": \"UP\",\n            \"details\": {\n                \"total\": 499963174912,\n                \"free\": 91943014400,\n                \"threshold\": 10485760,\n                \"path\": \"/.\",\n                \"exists\": true\n            }\n        },\n        \"ping\": {\n            \"status\": \"UP\"\n        }\n    }\n}\n```"
+					}
+				},
+				{
+					"name": "Application Info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Has application info\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('object');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/actuator/info",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"actuator",
+								"info"
+							]
+						},
+						"description": "Get application information and build details."
+					}
+				},
+				{
+					"name": "API Documentation (Swagger UI)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/swagger-ui/index.html",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"swagger-ui",
+								"index.html"
+							]
+						},
+						"description": "Access the interactive API documentation via Swagger UI.\n\nThis will open the Swagger UI interface in your browser where you can:\n- View all API endpoints\n- See request/response schemas\n- Test endpoints interactively\n- Download OpenAPI specification"
+					}
+				}
+			],
+			"description": "System monitoring and documentation endpoints."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Set default base URL if not set",
+					"if (!pm.environment.get(\"baseUrl\")) {",
+					"    pm.environment.set(\"baseUrl\", \"http://localhost:8080\");",
+					"}",
+					"",
+					"// Log the request for debugging",
+					"console.log(\"Making request to: \" + pm.request.url);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test to check response time",
+					"pm.test(\"Response time is less than 5000ms\", function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"// Global test for Content-Type header on JSON responses",
+					"if (pm.response.code === 200 || pm.response.code === 201) {",
+					"    pm.test(\"Content-Type is application/json\", function () {",
+					"        pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+					"    });",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "borrowerId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "bookId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "availableBookId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "borrowedBookId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

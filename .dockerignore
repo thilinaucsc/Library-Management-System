@@ -1,0 +1,84 @@
+# Docker ignore file for Library Management System
+
+# Maven build artifacts
+target/
+!target/library-management-*.jar
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Test data
+test-data/
+
+# Documentation (not needed in container)
+docs/
+*.md
+!README.md
+
+# Scripts (already in container or not needed)
+scripts/
+*.sh
+
+# Docker files (not needed in container)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Backup files
+backups/
+*.bak
+
+# Maven wrapper (will be copied explicitly)
+!.mvn/
+!mvnw
+!mvnw.cmd
+
+# Coverage reports
+coverage/
+*.exec
+
+# Node modules (if any)
+node_modules/
+
+# NPM files
+package*.json
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Application specific
+application-local.yml
+application-*.yml
+!application.yml
+
+# PID files
+*.pid

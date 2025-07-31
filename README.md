@@ -14,6 +14,8 @@ A comprehensive RESTful API for managing a library system that handles books and
 - [Monitoring & Health Checks](#monitoring--health-checks)
 - [Production Deployment](#production-deployment)
 - [API Examples](#api-examples)
+- [Architecture](#architecture)
+- [Design Decisions](#design-decisions)
 
 ## Overview
 
@@ -347,3 +349,180 @@ For support and questions:
 - Check the API documentation at `/swagger-ui.html`
 - Review the health status at `/actuator/health`
 - Check application logs for detailed error information
+
+## Architecture
+
+### System Architecture
+
+The Library Management System follows a **layered architecture pattern** with clear separation of concerns:
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   REST API      │    │   Service       │    │   Data Access   │
+│   Controllers   │───▶│   Layer         │───▶│   Repository    │
+│                 │    │   (Business     │    │   Layer         │
+│                 │    │    Logic)       │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                        │
+                                                        ▼
+                                               ┌─────────────────┐
+                                               │   Database      │
+                                               │   (H2/          │
+                                               │   PostgreSQL)   │
+                                               └─────────────────┘
+```
+
+### Layer Responsibilities
+
+#### 1. Presentation Layer (Controllers)
+- **Package**: `com.library.controller`
+- **Responsibilities**:
+  - REST endpoint definitions
+  - Request/response mapping (DTOs)
+  - Input validation using Bean Validation
+  - HTTP status code handling
+  - Exception handling delegation
+
+#### 2. Service Layer (Business Logic)
+- **Package**: `com.library.service` & `com.library.service.impl`
+- **Responsibilities**:
+  - Core business rules enforcement
+  - Transaction management with `@Transactional`
+  - Data transformation and validation
+  - Cross-cutting concerns
+
+#### 3. Data Access Layer (Repositories)
+- **Package**: `com.library.repository`
+- **Responsibilities**:
+  - Database operations using Spring Data JPA
+  - Entity mapping and relationships
+  - Custom queries with JPQL
+  - Data persistence
+
+#### 4. Domain Layer (Entities & DTOs)
+- **Packages**: `com.library.entity`, `com.library.dto`
+- **Responsibilities**:
+  - Core business entities with JPA annotations
+  - Data validation rules
+  - Entity relationships and constraints
+  - Request/Response data transfer objects
+
+### Key Components
+
+#### Configuration Components
+- **OpenApiConfig**: API documentation configuration
+- **ProductionConfig**: Production-specific configurations
+- **LibraryHealthIndicator**: Custom health checks
+
+#### Exception Handling
+- **GlobalExceptionHandler**: Centralized exception handling
+- **Consistent Error Responses**: Standardized error format across all endpoints
+
+#### Monitoring & Observability
+- **Spring Boot Actuator**: Health checks, metrics, and monitoring
+- **Custom Health Indicators**: Application-specific health checks
+- **Comprehensive Logging**: Structured logging with different levels per environment
+
+## Design Decisions
+
+### 1. **Layered Architecture Pattern**
+**Decision**: Implement a clean layered architecture with clear separation of concerns.
+**Rationale**: 
+- Promotes maintainability and testability
+- Enables independent development and testing of each layer
+- Follows SOLID principles and dependency inversion
+- Supports future scalability and modifications
+
+### 2. **Spring Boot Framework**
+**Decision**: Use Spring Boot 3.5.4 as the primary framework.
+**Rationale**:
+- Provides comprehensive ecosystem for enterprise applications
+- Auto-configuration reduces boilerplate code
+- Built-in support for REST APIs, security, and data access
+- Excellent testing support and extensive documentation
+
+### 3. **JPA/Hibernate for Data Access**
+**Decision**: Use Spring Data JPA with Hibernate as the ORM.
+**Rationale**:
+- Simplifies database operations with repository pattern
+- Automatic query generation for common operations
+- Support for custom queries with JPQL
+- Database-agnostic approach for future migrations
+
+### 4. **H2 for Development, PostgreSQL for Production**
+**Decision**: Use H2 in-memory database for development/testing, PostgreSQL for production.
+**Rationale**:
+- H2 enables fast development and testing cycles
+- PostgreSQL provides production-grade performance and features
+- Environment-specific configurations support smooth transitions
+
+### 5. **DTO Pattern for API Layer**
+**Decision**: Use separate DTOs for request/response instead of exposing entities directly.
+**Rationale**:
+- Prevents over-fetching and under-fetching of data
+- Provides API versioning flexibility
+- Enables input validation at the API boundary
+- Decouples internal model from external API contract
+
+### 6. **Global Exception Handling**
+**Decision**: Implement centralized exception handling with `@RestControllerAdvice`.
+**Rationale**:
+- Ensures consistent error response format
+- Reduces code duplication across controllers
+- Provides proper HTTP status code mapping
+- Enables comprehensive error logging
+
+### 7. **Bean Validation for Input Validation**
+**Decision**: Use Jakarta Bean Validation for request validation.
+**Rationale**:
+- Declarative validation with annotations
+- Consistent validation across the application
+- Automatic error message generation
+- Integration with Spring Boot's error handling
+
+### 8. **Custom Business Logic in Service Layer**
+**Decision**: Implement all business rules in the service layer, not in controllers or repositories.
+**Rationale**:
+- Single responsibility principle compliance
+- Enables easy unit testing with mocks
+- Supports transaction management
+- Promotes code reusability
+
+### 9. **Comprehensive Testing Strategy**
+**Decision**: Implement unit tests, integration tests, and controller tests with high coverage (80%+).
+**Rationale**:
+- Ensures code quality and reliability
+- Enables confident refactoring and feature additions
+- Documents expected behavior through tests
+- Supports continuous integration practices
+
+### 10. **Environment-Specific Configuration**
+**Decision**: Use Spring profiles (dev, test, prod) for environment-specific configurations.
+**Rationale**:
+- Supports different database configurations per environment
+- Enables environment-specific logging levels
+- Facilitates smooth deployment across environments
+- Maintains security by separating production credentials
+
+### 11. **Actuator for Monitoring**
+**Decision**: Integrate Spring Boot Actuator with custom health indicators.
+**Rationale**:
+- Provides out-of-the-box monitoring endpoints
+- Enables health checks for external monitoring systems
+- Supports application metrics and diagnostics
+- Facilitates production troubleshooting
+
+### 12. **OpenAPI/Swagger Documentation**
+**Decision**: Use SpringDoc OpenAPI for automatic API documentation generation.
+**Rationale**:
+- Generates interactive API documentation
+- Keeps documentation in sync with code
+- Provides testing interface for developers
+- Supports API contract validation
+
+These architectural and design decisions ensure the Library Management System is:
+- **Maintainable**: Clear separation of concerns and well-defined boundaries
+- **Testable**: Comprehensive test coverage with proper mocking strategies
+- **Scalable**: Layered architecture supports horizontal and vertical scaling
+- **Secure**: Input validation, proper error handling, and production-ready configurations
+- **Observable**: Comprehensive logging, health checks, and monitoring capabilities
