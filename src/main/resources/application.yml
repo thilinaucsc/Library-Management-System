@@ -22,6 +22,9 @@ spring:
         cache:
           use_second_level_cache: false
   
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  
   h2:
     console:
       enabled: true
@@ -29,6 +32,10 @@ spring:
 
 server:
   port: 8080
+  shutdown: graceful
+  tomcat:
+    connection-timeout: 20s
+    keep-alive-timeout: 20s
 
 logging:
   level:
