@@ -2,8 +2,10 @@ package com.library.service;
 
 import com.library.entity.Book;
 import com.library.entity.Borrower;
+import com.library.entity.BorrowingHistory;
 import com.library.repository.BookRepository;
 import com.library.repository.BorrowerRepository;
+import com.library.repository.BorrowingHistoryRepository;
 import com.library.service.impl.BookServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +36,9 @@ class BookServiceTest {
 
     @Mock
     private BorrowerRepository borrowerRepository;
+
+    @Mock
+    private BorrowingHistoryRepository borrowingHistoryRepository;
 
     @InjectMocks
     private BookServiceImpl bookService;
@@ -321,6 +326,7 @@ class BookServiceTest {
         when(borrowerRepository.findById(borrowerId)).thenReturn(Optional.of(testBorrower));
         when(bookRepository.findFirstAvailableBookByIsbn(normalizedIsbn)).thenReturn(Optional.of(testBook));
         when(bookRepository.save(testBook)).thenReturn(testBook);
+        when(borrowingHistoryRepository.save(any(BorrowingHistory.class))).thenReturn(new BorrowingHistory());
 
         // Act
         Book result = bookService.borrowBook(isbn, borrowerId);
@@ -390,6 +396,7 @@ class BookServiceTest {
         testBook.borrowBy(testBorrower);
         when(bookRepository.findById(1L)).thenReturn(Optional.of(testBook));
         when(bookRepository.save(testBook)).thenReturn(testBook);
+        when(borrowingHistoryRepository.save(any(BorrowingHistory.class))).thenReturn(new BorrowingHistory());
 
         // Act
         Book result = bookService.returnBook(1L);

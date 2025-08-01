@@ -23,7 +23,9 @@ This Library Management System provides a robust backend API for:
 - Managing borrowers with unique email validation
 - Managing books with ISBN consistency checks
 - Tracking book borrowing and returns
+- Complete borrowing history tracking and analytics
 - Supporting multiple copies of the same book
+- Overdue book monitoring and statistics
 - Comprehensive validation and error handling
 
 ## Technology Stack
@@ -117,6 +119,8 @@ SPRING_PROFILES_ACTIVE=prod
 - **OpenAPI Spec**: `http://localhost:8080/v3/api-docs`
 
 ### API Endpoints
+
+#### Core Library Operations
 ____________________________________________________________________
 | Method | Endpoint                 | Description                  |
 |--------|--------------------------|------------------------------|
@@ -125,6 +129,22 @@ ____________________________________________________________________
 | GET    | `/books`                 | Get all books in the library |
 | POST   | `/books/{bookId}/borrow` | Borrow a book                |
 | POST   | `/books/{bookId}/return` | Return a book                |
+____________________________________________________________________
+
+#### Borrowing History & Analytics
+____________________________________________________________________
+| Method | Endpoint                                    | Description                                |
+|--------|--------------------------------------------|--------------------------------------------|
+| GET    | `/api/history/borrowers/{borrowerId}`      | Get borrowing history for a borrower       |
+| GET    | `/api/history/borrowers/{borrowerId}/paginated` | Get paginated borrowing history        |
+| GET    | `/api/history/books/{bookId}`              | Get borrowing history for a book           |
+| GET    | `/api/history/borrowers/{borrowerId}/current` | Get currently borrowed books by borrower |
+| GET    | `/api/history/borrowers/{borrowerId}/overdue` | Get overdue books for a borrower        |
+| GET    | `/api/history/overdue`                     | Get all overdue books in the system       |
+| GET    | `/api/history/date-range`                  | Get borrowing history within date range   |
+| GET    | `/api/history/statistics/popular-books`    | Get most popular books (most borrowed)     |
+| GET    | `/api/history/statistics/active-borrowers` | Get most active borrowers                  |
+| GET    | `/api/history/borrowers/{borrowerId}/statistics` | Get detailed borrower statistics     |
 ____________________________________________________________________
 
 ### Data Models
@@ -150,6 +170,40 @@ ____________________________________________________________________
 ```json
 {
   "borrowerId": 1
+}
+```
+
+#### Borrowing History Response
+```json
+{
+  "id": 1,
+  "book": {
+    "id": 1,
+    "isbn": "978-0-123456-78-9",
+    "title": "Sample Book Title",
+    "author": "Author Name"
+  },
+  "borrower": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john.doe@example.com"
+  },
+  "actionType": "BORROWED",
+  "actionDate": "2023-07-30T14:30:00",
+  "dueDate": "2023-08-13T14:30:00",
+  "overdue": false,
+  "daysUntilDue": 5,
+  "createdAt": "2023-07-30T14:30:00"
+}
+```
+
+#### Borrower Statistics Response
+```json
+{
+  "borrowerId": 1,
+  "totalBorrowings": 25,
+  "currentBorrowings": 3,
+  "hasOverdueBooks": false
 }
 ```
 
@@ -182,11 +236,12 @@ java -jar target/LibraryManagement-0.0.1-SNAPSHOT.jar
 
 ### Test Coverage
 The project includes comprehensive testing:
-- **Unit Tests**: 162 total tests
+- **Total Tests**: 245+ comprehensive tests
 - **Integration Tests**: 8 end-to-end scenarios
-- **Repository Tests**: 28 data layer tests
-- **Service Tests**: 93 business logic tests
-- **Controller Tests**: 33 API layer tests
+- **Repository Tests**: 58 data layer tests (including borrowing history)
+- **Service Tests**: 125 business logic tests (including borrowing history)
+- **Controller Tests**: 54 API layer tests (including borrowing history endpoints)
+- **Coverage**: Exceeds 80% with comprehensive business rule testing
 
 ### Test Types
 - **Unit Tests**: Isolated component testing with mocks
@@ -287,6 +342,41 @@ curl -X POST http://localhost:8080/books/1/borrow \
 curl -X POST http://localhost:8080/books/1/return \
   -H "Content-Type: application/json" \
   -d '{}'
+```
+
+### Get Borrowing History for a Borrower
+```bash
+curl -X GET http://localhost:8080/api/history/borrowers/1
+```
+
+### Get Currently Borrowed Books
+```bash
+curl -X GET http://localhost:8080/api/history/borrowers/1/current
+```
+
+### Get Overdue Books for a Borrower
+```bash
+curl -X GET http://localhost:8080/api/history/borrowers/1/overdue
+```
+
+### Get All Overdue Books in System
+```bash
+curl -X GET http://localhost:8080/api/history/overdue
+```
+
+### Get Borrowing History by Date Range
+```bash
+curl -X GET "http://localhost:8080/api/history/date-range?startDate=2023-07-01T00:00:00&endDate=2023-07-31T23:59:59"
+```
+
+### Get Most Popular Books
+```bash
+curl -X GET "http://localhost:8080/api/history/statistics/popular-books?limit=10"
+```
+
+### Get Borrower Statistics
+```bash
+curl -X GET http://localhost:8080/api/history/borrowers/1/statistics
 ```
 
 ### Error Response Example

@@ -2,8 +2,10 @@ package com.library.service.impl;
 
 import com.library.entity.Book;
 import com.library.entity.Borrower;
+import com.library.entity.BorrowingHistory;
 import com.library.repository.BookRepository;
 import com.library.repository.BorrowerRepository;
+import com.library.repository.BorrowingHistoryRepository;
 import com.library.service.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,11 +25,14 @@ public class BookServiceImpl implements BookService {
 
     private final BookRepository bookRepository;
     private final BorrowerRepository borrowerRepository;
+    private final BorrowingHistoryRepository borrowingHistoryRepository;
 
     @Autowired
-    public BookServiceImpl(BookRepository bookRepository, BorrowerRepository borrowerRepository) {
+    public BookServiceImpl(BookRepository bookRepository, BorrowerRepository borrowerRepository, 
+                          BorrowingHistoryRepository borrowingHistoryRepository) {
         this.bookRepository = bookRepository;
         this.borrowerRepository = borrowerRepository;
+        this.borrowingHistoryRepository = borrowingHistoryRepository;
     }
 
     @Override
@@ -149,7 +154,13 @@ public class BookServiceImpl implements BookService {
 
         Book book = availableBook.get();
         book.borrowBy(borrower);
-        return bookRepository.save(book);
+        Book savedBook = bookRepository.save(book);
+        
+        // Record borrowing history
+        BorrowingHistory history = new BorrowingHistory(savedBook, borrower, BorrowingHistory.ActionType.BORROWED);
+        borrowingHistoryRepository.save(history);
+        
+        return savedBook;
     }
 
     @Override
@@ -174,7 +185,13 @@ public class BookServiceImpl implements BookService {
         }
 
         book.borrowBy(borrower);
-        return bookRepository.save(book);
+        Book savedBook = bookRepository.save(book);
+        
+        // Record borrowing history
+        BorrowingHistory history = new BorrowingHistory(savedBook, borrower, BorrowingHistory.ActionType.BORROWED);
+        borrowingHistoryRepository.save(history);
+        
+        return savedBook;
     }
 
     @Override
@@ -190,8 +207,17 @@ public class BookServiceImpl implements BookService {
             throw new IllegalStateException("Book with ID " + bookId + " is not currently borrowed");
         }
 
+        // Get the current borrower before returning the book
+        Borrower currentBorrower = book.getBorrower();
+        
         book.returnBook();
-        return bookRepository.save(book);
+        Book savedBook = bookRepository.save(book);
+        
+        // Record return history
+        BorrowingHistory history = new BorrowingHistory(savedBook, currentBorrower, BorrowingHistory.ActionType.RETURNED);
+        borrowingHistoryRepository.save(history);
+        
+        return savedBook;
     }
 
     @Override
